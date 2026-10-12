@@ -19,7 +19,6 @@
 
 #define _EMA_ALPHA 0.05
 
-// ★ 수정: 실습 2에서 보정한 값으로 변경할 것
 #define _DUTY_MIN 555
 #define _DUTY_NEU ((_DUTY_MIN + _DUTY_MAX) / 2)
 #define _DUTY_MAX 2393
@@ -30,7 +29,6 @@ unsigned long last_sampling_time;
 
 Servo myservo;
 
-// ★ 추가: EMA 초기화 여부
 bool ema_initialized = false;
 
 void setup() {
@@ -40,7 +38,7 @@ void setup() {
   pinMode(PIN_ECHO, INPUT);
 
   digitalWrite(PIN_TRIG, LOW);
-  digitalWrite(PIN_LED, HIGH);  // ★ 추가: LED OFF
+  digitalWrite(PIN_LED, HIGH);
 
   myservo.attach(PIN_SERVO);
   myservo.writeMicroseconds(_DUTY_NEU);
@@ -62,8 +60,6 @@ void loop() {
   // get a distance reading from the USS
   dist_raw = USS_measure(PIN_TRIG, PIN_ECHO);
 
-  // ★ 수정: range filter
-  // 0은 측정 실패로 처리
   if (dist_raw == 0.0) {
     dist_filtered = dist_prev;
   }
@@ -73,7 +69,7 @@ void loop() {
     dist_prev = dist_filtered;
   }
 
-  // ★ 추가: LED control
+  // LED control
   // 측정에 성공하고 180~360mm 범위일 때 ON
   if (dist_raw >= _DIST_MIN && dist_raw <= _DIST_MAX) {
     digitalWrite(PIN_LED, LOW);
@@ -82,7 +78,6 @@ void loop() {
     digitalWrite(PIN_LED, HIGH);
   }
 
-  // ★ 수정: EMA filter
   if (!ema_initialized) {
     dist_ema = dist_filtered;
     ema_initialized = true;
@@ -92,7 +87,6 @@ void loop() {
              + (1.0 - _EMA_ALPHA) * dist_ema;
   }
 
-  // ★ 수정: proportional servo control
   float ratio = (dist_ema - _DIST_MIN)
               / (_DIST_MAX - _DIST_MIN);
 
@@ -103,7 +97,6 @@ void loop() {
 
   myservo.writeMicroseconds(duty);
 
-  // ★ 수정: serial plotter output
   Serial.print("Min:");    Serial.print(_DIST_MIN);
   Serial.print(",dist:");  Serial.print(dist_raw);
   Serial.print(",ema:");   Serial.print(dist_ema);
